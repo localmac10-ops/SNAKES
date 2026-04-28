@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Nokia 1100 Snake Rebuild</title>
+  <style>
+    :root{
+      --body-1:#4d4f53;
+      --body-2:#3b3d41;
+      --body-3:#2a2c30;
+      --body-4:#17181b;
+      --lcd:#a8c46b;
+      --lcd-dark:#1a1f0a;
+      --lcd-mid:#708546;
+      --shadow:rgba(0,0,0,.55);
+    }
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height:100%; }
+    body{
+      margin:0;
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(circle at top, #273043 0%, #151922 55%, #0f1117 100%);
+      color:#111;
+      font-family: "Courier New", monospace;
+      overflow:hidden;
+      touch-action: manipulation;
+    }
+
+    .phone{
+      width:min(94vw, 390px);
+      background:
+        linear-gradient(180deg, var(--body-1) 0%, #45474b 12%, var(--body-2) 38%, #2e3034 72%, var(--body-4) 100%);
+      border-radius: 44px 44px 64px 64px;
+      padding: 16px 16px 18px;
+      box-shadow:
+        0 18px 42px var(--shadow),
+        inset 0 1px 0 rgba(255,255,255,.15),
+        inset 0 -2px 8px rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.05);
+      position:relative;
+    }
+
+    .phone::before{
+      content:"";
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      top:10px;
+      width:42px;
+      height:4px;
+      border-radius:999px;
+      background:#101113;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,.05);
+      opacity:.95;
+    }
+
+    .logo{
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      top:26px;
+      color:rgba(255,255,255,.35);
+      letter-spacing:4px;
+      font-size:10px;
+      font-weight:700;
+      user-select:none;
+    }
+
+    .screen-shell{
+      margin-top:24px;
+      background:
+        linear-gradient(180deg, #26282c 0%, #16171a 100%);
+      padding: 10px 10px 12px;
+      border-radius: 12px 12px 18px 18px;
+      border: 1px solid rgba(255,255,255,.06);
+      box-shadow:
+        inset 0 2px 7px rgba(0,0,0,.7),
+        0 1px 0 rgba(255,255,255,.06);
+    }
+
+    .lcd-frame{
+      background: linear-gradient(180deg, #79934d 0%, #6c8542 100%);
+      padding: 6px;
+      border-radius: 6px;
+      border:1px solid rgba(0,0,0,.25);
+      box-shadow: inset 0 0 10px rgba(0,0,0,.18);
+    }
+
+    .lcd-top{
+      height: 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 0 4px 4px;
+      color: var(--lcd-dark);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: .6px;
+      user-select:none;
+    }
+
+    .signal{
+      display:flex;
+      align-items:flex-end;
+      gap:2px;
+      height:10px;
+    }
+    .signal span{
+      width:3px;
+      background: var(--lcd-dark);
+      border-radius:1px;
+      opacity:.95;
+    }
+    .signal span:nth-child(1){ height:3px; }
+    .signal span:nth-child(2){ height:5px; }
+    .signal span:nth-child(3){ height:7px; }
+    .signal span:nth-child(4){ height:9px; }
+
+    .battery{
+      display:flex;
+      align-items:center;
+      gap:2px;
+    }
+    .battery-box{
+      width:18px;
+      height:10px;
+      border:2px solid var(--lcd-dark);
+      border-radius:2px;
+      position:relative;
+      padding:1px;
+      background: rgba(255,255,255,.17);
+    }
+    .battery-fill{
+      width:12px;
+      height:6px;
+      background: var(--lcd-dark);
+      border-radius:1px;
+    }
+    .battery-tip{
+      width:2px;
+      height:4px;
+      background: var(--lcd-dark);
+      border-radius:0 1px 1px 0;
+    }
+
+    .screen{
+      position:relative;
+      width:100%;
+      aspect-ratio: 320 / 216;
+      background: #a8c46b;
+      overflow:hidden;
+      border-radius: 2px;
+    }
+
+    canvas{
+      display:block;
+      width:100%;
+      height:100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .controls{
+      margin-top: 12px;
+      display:grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items:center;
+      gap:12px;
+      padding: 2px 6px 0;
+      user-select:none;
+    }
+
+    .dpad{
+      grid-column: 2;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap:8px;
+      width: 186px;
+      justify-self:center;
+    }
+
+    .soft{
+      width: 72px;
+      height: 34px;
+      border:none;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #67686b 0%, #4c4e52 55%, #36383b 100%);
+      color: transparent;
+      box-shadow:
+        0 4px 0 #1c1d20,
+        0 7px 14px rgba(0,0,0,.25),
+        inset 0 1px 0 rgba(255,255,255,.14);
+      cursor:pointer;
+      position:relative;
+      outline:none;
+      transition: transform .05s ease, box-shadow .05s ease;
+    }
+
+    .soft::before{
+      content:"";
+      position:absolute;
+      inset: 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.04);
+    }
+
+    .soft:active,
+    .soft.pressed{
+      transform: translateY(3px);
+      box-shadow:
+        0 1px 0 #1c1d20,
+        0 3px 8px rgba(0,0,0,.22),
+        inset 0 2px 6px rgba(0,0,0,.35);
+    }
+
+    .dir{
+      width: 52px;
+      height: 38px;
+      border:none;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #5c5f64 0%, #4a4d52 55%, #34373b 100%);
+      box-shadow:
+        0 4px 0 #1c1d20,
+        0 7px 14px rgba(0,0,0,.25),
+        inset 0 1px 0 rgba(255,255,255,.12);
+      color:#dfe5df;
+      font-size:16px;
+      cursor:pointer;
+      outline:none;
+      transition: transform .05s ease, box-shadow .05s ease;
+      display:grid;
+      place-items:center;
+    }
+
+    .dir:active,
+    .dir.pressed{
+      transform: translateY(3px);
+      box-shadow:
+        0 1px 0 #1c1d20,
+        0 3px 8px rgba(0,0,0,.22),
+        inset 0 2px 6px rgba(0,0,0,.34);
+    }
+
+    .ok{
+      grid-column: 2;
+      grid-row: 2;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #68706a 0%, #4f5851 50%, #37413a 100%);
+      color: transparent;
+    }
+
+    .up{ grid-column:2; grid-row:1; }
+    .left{ grid-column:1; grid-row:2; }
+    .right{ grid-column:3; grid-row:2; }
+    .down{ grid-column:2; grid-row:3; }
+
+    .meta{
+      position:absolute;
+      bottom: 12px;
+      left:50%;
+      transform:translateX(-50%);
+      color: rgba(255,255,255,.18);
+      font-size: 9px;
+      letter-spacing: 2px;
+      user-select:none;
+      pointer-events:none;
+    }
+
+    @media (max-width: 420px){
+      .phone{
+        width:min(95vw, 390px);
+        padding: 14px 12px 16px;
+      }
+      .dpad{ width: 176px; }
+      .dir{ width: 50px; height: 36px; }
+      .ok{ width: 60px; height: 60px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="phone">
+    <div class="logo">NOKIA</div>
+    <div class="screen-shell">
+      <div class="lcd-frame">
+        <div class="lcd-top" aria-hidden="true">
+          <div class="signal" title="signal">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div id="hudText"> </div>
+          <div class="battery" title="battery">
+            <div class="battery-box"><div class="battery-fill"></div></div>
+            <div class="battery-tip"></div>
+          </div>
+        </div>
+        <div class="screen">
+          <canvas id="game" width="320" height="216"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <section class="controls" aria-label="Snake controls">
+      <div class="dpad">
+        <button class="dir up" data-key="up" aria-label="up">▲</button>
+        <button class="dir left" data-key="left" aria-label="left">◀</button>
+        <button class="dir ok" data-key="ok" aria-label="ok">OK</button>
+        <button class="dir right" data-key="right" aria-label="right">▶</button>
+        <button class="dir down" data-key="down" aria-label="down">▼</button>
+      </div>
+      <button class="soft" data-key="reset" aria-label="reset"></button>
+    </section>
+
+    <div class="meta"> </div>
+  </main>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+
+      const HUD_TEXT = document.getElementById('hudText');
+
+      const GRID_W = 32;
+      const GRID_H = 20;
+      const CELL = 10;
+      const HUD_H = 16;
+
+      const COLORS = {
+        lcd: '#a8c46b',
+        text: '#1a1f0a',
+        snake: '#121509',
+        snakeEyes: '#a8c46b',
+        wall: '#1a1f0a',
+        bannerBg: 'rgba(168,196,107,0.92)',
+      };
+
+      const LEVEL_INTERVAL_MS = 42000;
+      const MAX_LEVEL = 12;
+
+      const baseIntervals = [
+        238, 230, 220, 210, 200, 190, 180, 170, 160, 152, 144, 136
+      ];
+
+      const state = {
+        mode: 'boot', // boot | title | playing
+        bootUntil: performance.now() + 900,
+        now: performance.now(),
+        elapsedMs: 0,
+        level: 1,
+        score: 0,
+        foodsEaten: 0,
+        highScore: Number(localStorage.getItem('nokia_snake_best') || 0),
+        snake: [],
+        dir: { x: 1, y: 0 },
+        nextDir: { x: 1, y: 0 },
+        food: { x: 10, y: 10 },
+        obstacles: new Set(),
+        wrap: true,
+        accumulator: 0,
+        lastTick: performance.now(),
+        respawnUntil: 0,
+        banner: { text: '', until: 0 },
+        levelFlashUntil: 0,
+        levelAt: 1,
+        audioReady: false,
+      };
+
+      let audioCtx = null;
+      function ensureAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          audioCtx = new AC();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        state.audioReady = true;
+      }
+
+      function beep(freq, duration, type = 'square', vol = 0.05, rampOut = 0.015) {
+        if (!audioCtx) return;
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        g.gain.setValueAtTime(vol, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(rampOut, audioCtx.currentTime + duration);
+        o.connect(g);
+        g.connect(audioCtx.destination);
+        o.start();
+        o.stop(audioCtx.currentTime + duration + 0.01);
+      }
+
+      function soundButton() {
+        beep(420, 0.03, 'square', 0.03, 0.008);
+      }
+
+      function soundEat() {
+        beep(880, 0.05, 'square', 0.05, 0.01);
+        setTimeout(() => beep(1170, 0.04, 'square', 0.04, 0.01), 35);
+      }
+
+      function soundCrash() {
+        beep(180, 0.08, 'sawtooth', 0.05, 0.01);
+        setTimeout(() => beep(120, 0.16, 'sawtooth', 0.04, 0.01), 55);
+      }
+
+      function soundLevelUp() {
+        beep(660, 0.04, 'square', 0.04, 0.01);
+        setTimeout(() => beep(830, 0.05, 'square', 0.04, 0.01), 45);
+      }
+
+      function keyStr(x, y) {
+        return `${x},${y}`;
+      }
+
+      function addCell(set, x, y) {
+        if (x >= 0 && x < GRID_W && y >= 0 && y < GRID_H) set.add(keyStr(x, y));
+      }
+
+      function addRect(set, x, y, w, h) {
+        for (let yy = y; yy < y + h; yy++) {
+          for (let xx = x; xx < x + w; xx++) addCell(set, xx, yy);
+        }
+      }
+
+      function addLineH(set, x1, x2, y) {
+        const a = Math.min(x1, x2), b = Math.max(x1, x2);
+        for (let x = a; x <= b; x++) addCell(set, x, y);
+      }
+
+      function addLineV(set, x, y1, y2) {
+        const a = Math.min(y1, y2), b = Math.max(y1, y2);
+        for (let y = a; y <= b; y++) addCell(set, x, y);
+      }
+
+      function createMaze(level) {
+        const set = new Set();
+        if (level <= 2) return set;
+
+        // Level 3: a couple of light pillars.
+        if (level >= 3) {
+          addRect(set, 6, 4, 2, 5);
+          addRect(set, 24, 11, 2, 5);
+        }
+        // Level 4: lane rails.
+        if (level >= 4) {
+          addLineH(set, 3, 13, 8);
+          addLineH(set, 18, 28, 12);
+        }
+        // Level 5: cross.
+        if (level >= 5) {
+          addLineV(set, 16, 2, 5);
+          addLineV(set, 16, 14, 17);
+          addLineH(set, 9, 23, 10);
+        }
+        // Level 6: boxy tunnels.
+        if (level >= 6) {
+          addRect(set, 4, 2, 3, 3);
+          addRect(set, 25, 2, 3, 3);
+          addRect(set, 4, 15, 3, 3);
+          addRect(set, 25, 15, 3, 3);
+          addLineV(set, 8, 6, 14);
+          addLineV(set, 23, 5, 13);
+        }
+        // Level 7: narrow corridor.
+        if (level >= 7) {
+          addLineH(set, 6, 14, 4);
+          addLineH(set, 17, 25, 7);
+          addLineH(set, 7, 16, 15);
+          addLineV(set, 12, 8, 13);
+          addLineV(set, 19, 3, 10);
+        }
+        // Level 8: broken ring.
+        if (level >= 8) {
+          addLineH(set, 10, 21, 2);
+          addLineH(set, 10, 21, 17);
+          addLineV(set, 10, 2, 17);
+          addLineV(set, 21, 2, 17);
+          // openings
+          ['14,2','17,17','10,10','21,9'].forEach(k => set.delete(k));
+        }
+        // Level 9+: dense stepping stones.
+        if (level >= 9) {
+          addRect(set, 2, 5, 2, 2);
+          addRect(set, 7, 9, 2, 2);
+          addRect(set, 14, 5, 2, 2);
+          addRect(set, 19, 14, 2, 2);
+          addRect(set, 27, 8, 2, 2);
+          addRect(set, 12, 12, 2, 2);
+          addRect(set, 4, 13, 2, 2);
+        }
+        // Level 10+: add a couple of stronger blockers, but keep play fair.
+        if (level >= 10) {
+          addLineH(set, 3, 10, 10);
+          addLineH(set, 21, 28, 5);
+          addLineV(set, 6, 6, 10);
+          addLineV(set, 26, 9, 14);
+        }
+        if (level >= 11) {
+          addRect(set, 14, 3, 4, 1);
+          addRect(set, 14, 16, 4, 1);
+          addRect(set, 13, 8, 1, 4);
+          addRect(set, 18, 8, 1, 4);
+        }
+        if (level >= 12) {
+          addRect(set, 9, 6, 2, 2);
+          addRect(set, 21, 6, 2, 2);
+          addRect(set, 9, 12, 2, 2);
+          addRect(set, 21, 12, 2, 2);
+        }
+        return set;
+      }
+
+      function currentLevel() {
+        return Math.min(MAX_LEVEL, 1 + Math.floor(state.elapsedMs / LEVEL_INTERVAL_MS));
+      }
+
+      function currentInterval() {
+        const lv = currentLevel();
+        const idx = Math.min(baseIntervals.length - 1, lv - 1);
+        const foodNudge = Math.min(16, Math.floor(state.foodsEaten / 6) * 2);
+        return Math.max(118, baseIntervals[idx] - foodNudge);
+      }
+
+      function stageWrap(level) {
+        return level <= 2;
+      }
+
+      function resetSnake() {
+        state.dir = { x: 1, y: 0 };
+        state.nextDir = { x: 1, y: 0 };
+        const safe = findSpawnPoint();
+        state.snake = [
+          { x: safe.x, y: safe.y },
+          { x: safe.x - 1, y: safe.y },
+          { x: safe.x - 2, y: safe.y },
+        ];
+      }
+
+      function findSpawnPoint() {
+        const candidates = [
+          { x: 15, y: 10 },
+          { x: 10, y: 10 },
+          { x: 19, y: 10 },
+          { x: 13, y: 8 },
+          { x: 13, y: 12 },
+          { x: 7, y: 7 },
+          { x: 21, y: 7 },
+        ];
+
+        for (const c of candidates) {
+          if (isRunFree(c.x, c.y, 4)) return c;
+        }
+
+        for (let y = 0; y < GRID_H; y++) {
+          for (let x = 2; x < GRID_W - 4; x++) {
+            if (isRunFree(x, y, 4)) return { x, y };
+          }
+        }
+        return { x: 15, y: 10 };
+      }
+
+      function isOccupied(x, y) {
+        return state.obstacles.has(keyStr(x, y)) || state.snake.some(s => s.x === x && s.y === y);
+      }
+
+      function isRunFree(x, y, len) {
+        for (let i = 0; i < len; i++) {
+          const xx = x + i;
+          if (xx < 0 || xx >= GRID_W || y < 0 || y >= GRID_H) return false;
+          if (state.obstacles.has(keyStr(xx, y))) return false;
+          if (state.snake.some(s => s.x === xx && s.y === y)) return false;
+        }
+        return true;
+      }
+
+      function spawnFood() {
+        for (let tries = 0; tries < 600; tries++) {
+          const x = Math.floor(Math.random() * GRID_W);
+          const y = Math.floor(Math.random() * GRID_H);
+          if (!isOccupied(x, y)) {
+            state.food = { x, y };
+            return;
+          }
+        }
+        // fallback
+        state.food = { x: 1, y: 1 };
+      }
+
+      function startTitle() {
+        state.mode = 'title';
+        state.banner.text = '';
+        state.banner.until = 0;
+      }
+
+      function startPlaying() {
+        state.mode = 'playing';
+        state.elapsedMs = 0;
+        state.level = 1;
+        state.score = 0;
+        state.foodsEaten = 0;
+        state.wrap = true;
+        state.obstacles = createMaze(1);
+        resetSnake();
+        spawnFood();
+        state.accumulator = 0;
+        state.respawnUntil = 0;
+        state.levelAt = 1;
+        state.banner.text = 'LEVEL 1';
+        state.banner.until = performance.now() + 1100;
+        soundLevelUp();
+      }
+
+      function respawnAfterCollision() {
+        resetSnake();
+        spawnFood();
+      }
+
+      function crash() {
+        soundCrash();
+        state.banner.text = 'CONTINUE';
+        state.banner.until = performance.now() + 550;
+        state.respawnUntil = performance.now() + 850;
+        respawnAfterCollision();
+      }
+
+      function maybeAdvanceLevel() {
+        const lv = currentLevel();
+        if (lv !== state.levelAt) {
+          state.levelAt = lv;
+          state.level = lv;
+          state.wrap = stageWrap(lv);
+          state.obstacles = createMaze(lv);
+          state.banner.text = `LEVEL ${lv}`;
+          state.banner.until = performance.now() + 950;
+          soundLevelUp();
+          // make sure current snake/food don't sit inside newly introduced obstacles
+          if (state.snake.some(s => state.obstacles.has(keyStr(s.x, s.y)))) {
+            respawnAfterCollision();
+          }
+          if (state.obstacles.has(keyStr(state.food.x, state.food.y))) {
+            spawnFood();
+          }
+        }
+      }
+
+      function step() {
+        // Apply queued direction with reverse prevention.
+        if (!(state.nextDir.x === -state.dir.x && state.nextDir.y === -state.dir.y)) {
+          state.dir = { ...state.nextDir };
+        }
+
+        let head = {
+          x: state.snake[0].x + state.dir.x,
+          y: state.snake[0].y + state.dir.y,
+        };
+
+        if (state.wrap) {
+          if (head.x < 0) head.x = GRID_W - 1;
+          if (head.x >= GRID_W) head.x = 0;
+          if (head.y < 0) head.y = GRID_H - 1;
+          if (head.y >= GRID_H) head.y = 0;
+        } else {
+          if (head.x < 0 || head.x >= GRID_W || head.y < 0 || head.y >= GRID_H) {
+            crash();
+            return;
+          }
+        }
+
+        if (state.obstacles.has(keyStr(head.x, head.y))) {
+          crash();
+          return;
+        }
+
+        const willEat = head.x === state.food.x && head.y === state.food.y;
+        const bodyToCheck = willEat ? state.snake : state.snake.slice(0, -1);
+        if (bodyToCheck.some(seg => seg.x === head.x && seg.y === head.y)) {
+          crash();
+          return;
+        }
+
+        state.snake.unshift(head);
+
+        if (willEat) {
+          state.score += 10;
+          state.foodsEaten += 1;
+          if (state.score > state.highScore) {
+            state.highScore = state.score;
+            localStorage.setItem('nokia_snake_best', String(state.highScore));
+          }
+          soundEat();
+          spawnFood();
+        } else {
+          state.snake.pop();
+        }
+      }
+
+      function update(dt) {
+        state.now = performance.now();
+
+        if (state.mode === 'boot') {
+          if (state.now >= state.bootUntil) {
+            state.mode = 'title';
+          }
+          return;
+        }
+
+        if (state.mode === 'title') {
+          return;
+        }
+
+        // Time-based level progression runs even through brief collision pauses.
+        state.elapsedMs += dt;
+        maybeAdvanceLevel();
+
+        if (state.now < state.respawnUntil) return;
+
+        state.accumulator += dt;
+        const interval = currentInterval();
+        while (state.accumulator >= interval) {
+          state.accumulator -= interval;
+          step();
+          if (state.now < state.respawnUntil) break;
+        }
+      }
+
+      function px(x, y, w, h, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x | 0, y | 0, w | 0, h | 0);
+      }
+
+      function drawNoise() {
+        // low-key LCD grain / scanline texture without making the food pulse
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.035)';
+        for (let y = 0; y < canvas.height; y += 4) {
+          ctx.fillRect(0, y, canvas.width, 1);
+        }
+        ctx.restore();
+      }
+
+      function drawBorder() {
+        if (state.wrap) return;
+        const y0 = HUD_H;
+        ctx.strokeStyle = COLORS.wall;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, y0 + 1, canvas.width - 2, canvas.height - y0 - 2);
+      }
+
+      function drawHud() {
+        ctx.fillStyle = COLORS.text;
+        ctx.font = 'bold 10px "Courier New"';
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        ctx.fillText(`SC ${String(state.score).padStart(4, '0')}`, 4, 8);
+
+        ctx.textAlign = 'center';
+        ctx.fillText(`LV ${String(state.levelAt).padStart(2, '0')}`, canvas.width / 2, 8);
+
+        ctx.textAlign = 'right';
+        ctx.fillText('∞', canvas.width - 4, 8);
+      }
+
+      function drawMaze() {
+        ctx.fillStyle = COLORS.wall;
+        for (const cell of state.obstacles) {
+          const [x, y] = cell.split(',').map(Number);
+          px(x * CELL + 1, HUD_H + y * CELL + 1, CELL - 2, CELL - 2, COLORS.wall);
+        }
+      }
+
+      function drawSnake() {
+        if (state.now < state.respawnUntil) return;
+
+        state.snake.forEach((seg, i) => {
+          const x = seg.x * CELL;
+          const y = HUD_H + seg.y * CELL;
+
+          if (i === 0) {
+            px(x + 1, y + 1, CELL - 2, CELL - 2, COLORS.snake);
+            ctx.fillStyle = COLORS.snakeEyes;
+            if (state.dir.x === 1) {
+              px(x + 6, y + 3, 1, 1, COLORS.snakeEyes);
+              px(x + 6, y + 6, 1, 1, COLORS.snakeEyes);
+            } else if (state.dir.x === -1) {
+              px(x + 3, y + 3, 1, 1, COLORS.snakeEyes);
+              px(x + 3, y + 6, 1, 1, COLORS.snakeEyes);
+            } else if (state.dir.y === -1) {
+              px(x + 3, y + 3, 1, 1, COLORS.snakeEyes);
+              px(x + 6, y + 3, 1, 1, COLORS.snakeEyes);
+            } else {
+              px(x + 3, y + 6, 1, 1, COLORS.snakeEyes);
+              px(x + 6, y + 6, 1, 1, COLORS.snakeEyes);
+            }
+          } else {
+            px(x + 1, y + 1, CELL - 2, CELL - 2, COLORS.snake);
+          }
+        });
+      }
+
+      function drawFood() {
+        const x = state.food.x * CELL;
+        const y = HUD_H + state.food.y * CELL;
+        // constant static pellet, no blinking or dimming
+        px(x + 2, y + 2, CELL - 4, CELL - 4, COLORS.snake);
+      }
+
+      function drawBanner() {
+        const now = performance.now();
+        if (now > state.banner.until) return;
+        const w = 156, h = 40;
+        const x = (canvas.width - w) / 2;
+        const y = 74;
+        px(x, y, w, h, COLORS.bannerBg);
+        ctx.strokeStyle = COLORS.text;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+        ctx.fillStyle = COLORS.text;
+        ctx.font = 'bold 16px "Courier New"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(state.banner.text, canvas.width / 2, y + h / 2);
+      }
+
+      function drawTitle() {
+        ctx.fillStyle = COLORS.lcd;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = COLORS.text;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        ctx.font = 'bold 27px "Courier New"';
+        ctx.fillText('NOKIA', canvas.width / 2, 66);
+
+        ctx.font = 'bold 18px "Courier New"';
+        ctx.fillText('1100', canvas.width / 2, 93);
+
+        ctx.font = 'bold 22px "Courier New"';
+        ctx.fillText('SNAKE', canvas.width / 2, 126);
+
+        ctx.font = 'bold 10px "Courier New"';
+        ctx.fillText('PRESS OK', canvas.width / 2, 160);
+
+        ctx.font = 'bold 9px "Courier New"';
+        ctx.fillText(`BEST ${String(state.highScore).padStart(4, '0')}`, canvas.width / 2, 176);
+      }
+
+      function drawBoot() {
+        ctx.fillStyle = COLORS.lcd;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = COLORS.text;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'bold 28px "Courier New"';
+        ctx.fillText('NOKIA', canvas.width / 2, 92);
+
+        ctx.font = 'bold 14px "Courier New"';
+        ctx.fillText('1100', canvas.width / 2, 118);
+      }
+
+      function drawPlaying() {
+        ctx.fillStyle = COLORS.lcd;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        drawNoise();
+        drawHud();
+        drawBorder();
+        drawMaze();
+        drawFood();
+        drawSnake();
+        drawBanner();
+
+        if (state.now < state.respawnUntil) {
+          const w = 150, h = 34;
+          const x = (canvas.width - w) / 2;
+          const y = 82;
+          px(x, y, w, h, COLORS.bannerBg);
+          ctx.strokeStyle = COLORS.text;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+          ctx.fillStyle = COLORS.text;
+          ctx.font = 'bold 15px "Courier New"';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('CONTINUE', canvas.width / 2, y + h / 2);
+        }
+      }
+
+      function draw() {
+        if (state.mode === 'boot') {
+          drawBoot();
+        } else if (state.mode === 'title') {
+          drawTitle();
+        } else {
+          drawPlaying();
+        }
+      }
+
+      function applyButtonPress(button) {
+        button.classList.add('pressed');
+        setTimeout(() => button.classList.remove('pressed'), 90);
+      }
+
+      function handleInput(key) {
+        ensureAudio();
+
+        const btn = document.querySelector(`[data-key="${key}"]`);
+        if (btn) applyButtonPress(btn);
+
+        if (key === 'reset') {
+          soundButton();
+          startTitle();
+          return;
+        }
+
+        if (state.mode === 'title' || state.mode === 'boot') {
+          if (key === 'ok') {
+            soundButton();
+            startPlaying();
+          }
+          return;
+        }
+
+        if (key === 'ok') {
+          soundButton();
+          return;
+        }
+
+        if (state.mode !== 'playing') return;
+        if (state.now < state.respawnUntil) return;
+
+        const dirs = {
+          up: { x: 0, y: -1 },
+          down: { x: 0, y: 1 },
+          left: { x: -1, y: 0 },
+          right: { x: 1, y: 0 },
+        };
+
+        const next = dirs[key];
+        if (!next) return;
+
+        // no instant reverse
+        if (next.x === -state.dir.x && next.y === -state.dir.y) return;
+
+        state.nextDir = next;
+        soundButton();
+      }
+
+      document.querySelectorAll('[data-key]').forEach(el => {
+        el.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          handleInput(el.dataset.key);
+        });
+      });
+
+      document.addEventListener('keydown', (e) => {
+        const map = {
+          ArrowUp: 'up',
+          ArrowDown: 'down',
+          ArrowLeft: 'left',
+          ArrowRight: 'right',
+          Enter: 'ok',
+          ' ': 'ok',
+          Escape: 'reset',
+          r: 'reset',
+          R: 'reset',
+        };
+        const key = map[e.key];
+        if (!key) return;
+        e.preventDefault();
+        handleInput(key);
+      });
+
+      // Start in title after boot.
+      setTimeout(() => {
+        if (state.mode === 'boot' && performance.now() >= state.bootUntil) {
+          state.mode = 'title';
+        }
+      }, 950);
+
+      function loop(ts) {
+        const dt = ts - state.lastTick;
+        state.lastTick = ts;
+        update(dt);
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
